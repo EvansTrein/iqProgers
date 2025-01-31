@@ -1,0 +1,30 @@
+services:
+  storage:
+      container_name: storage
+      environment:
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      image: postgres:15-alpine
+      ports:
+        - ${POSTGRES_PORT}:${POSTGRES_PORT}
+      command:
+        - 'postgres'
+        - '-c'
+        - 'port=${POSTGRES_PORT}'
+      volumes:
+        - storage_vol:/var/lib/postgresql/data
+      networks:
+        - server_net
+
+volumes: 
+  storage_vol: {}
+
+networks:
+  server_net:
+    driver: bridge
+
+
+# docker compose --env-file config.env up --build -d
+
+
+
