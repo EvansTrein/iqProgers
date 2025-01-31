@@ -12,3 +12,6 @@ migrate:	# is to perform the migration at local startup
 
 run-docker-compose:
 	docker compose --env-file config.env up --build -d
+
+go-lint:
+	golangci-lint run

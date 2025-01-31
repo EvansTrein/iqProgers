@@ -25,8 +25,6 @@ func New(log *slog.Logger, db StoreWallet) *Wallet {
 	}
 }
 
-// Stop gracefully shuts down the Wallet service.
-// It cleans up resources and logs the shutdown process.
 func (w *Wallet) Stop() error {
 	w.log.Debug("service Wallet: stop started")
 
