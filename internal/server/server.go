@@ -10,7 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const gracefulShutdownTimer = time.Second * 20
+const (
+	gracefulShutdownTimer  = time.Second * 10
+	timeoutHandlerResponce = time.Second * 5
+)
 
 type HttpServer struct {
 	router *gin.Engine

@@ -6,9 +6,12 @@ CREATE TABLE users (
 
 CREATE TABLE transactions (
     id SERIAL PRIMARY KEY,
-    sender_id INT NOT NULL REFERENCES users(id),
-    receiver_id INT NOT NULL REFERENCES users(id),
+    sender_id INT REFERENCES users(id),
+    receiver_id INT REFERENCES users(id),
     idempotency_key UUID UNIQUE NOT NULL,
+	success BOOLEAN NOT NULL DEFAULT false,
+	completed BOOLEAN NOT NULL DEFAULT false,
+	type_operation VARCHAR(80) NOT NULL,
 	amount BIGINT NOT NULL,
     date_operation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_sender FOREIGN KEY (sender_id) REFERENCES users(id),
