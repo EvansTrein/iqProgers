@@ -31,6 +31,17 @@ type TransferResponse struct {
 	Operation *Transaction `json:"operation"`
 }
 
+type UserOperationsRequest struct {
+	UserID uint
+	Offset int
+	Limit  int
+}
+
+type UserOperationsResponse struct {
+	Message   string         `json:"message"`
+	Operation []*Transaction `json:"operation"`
+}
+
 type Transaction struct {
 	ID             uint      `json:"transaction_id"`
 	SenderID       uint      `json:"-"`

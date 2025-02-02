@@ -7,31 +7,17 @@ import (
 	"net/http"
 
 	"github.com/EvansTrein/iqProgers/models"
-	serv "github.com/EvansTrein/iqProgers/service"
 	"github.com/EvansTrein/iqProgers/storages"
-	"github.com/EvansTrein/iqProgers/utils"
 	"github.com/gin-gonic/gin"
 )
 
-type walletTransfer interface {
-	Transfer(ctx context.Context, req *models.TransferRequest) (*models.TransferResponse, error)
+type walletOperations interface {
+	UserOperations(ctx context.Context, req *models.UserOperationsRequest) (*models.UserOperationsResponse, error)
 }
 
-// example request
-//
-// Headers - required
-// Idempotency-Key UUID
-// 'f65616ca-8b51-4af2-8342-84157b55cbb7'
-//
-// body - required
-// {
-// 	"sender_id": 4,
-// 	"receiver_id": 3,
-// 	"amount": 100.55
-// }
-func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
+func Operations(log *slog.Logger, service walletOperations) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		op := "Handler Transfer: call"
+		op := "Handler Operations: call"
 		log = log.With(
 			slog.String("operation", op),
 			slog.String("apiPath", ctx.FullPath()),
@@ -39,31 +25,46 @@ func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 		)
 		log.Debug("request received")
 
-		var reqData models.TransferRequest
-		if err := ctx.ShouldBindJSON(&reqData); err != nil {
+		userID, ok := ctx.Params.Get("id")
+		if !ok {
 			ctx.JSON(400, models.HandlerResponse{
 				Status:  http.StatusBadRequest,
-				Message: "invalid data in body",
+				Message: "invalid data in params",
+				Error:   "user id not passed",
+			})
+			return
+		}
+
+		limit, ok := ctx.GetQuery("limit")
+		if !ok {
+			ctx.JSON(400, models.HandlerResponse{
+				Status:  http.StatusBadRequest,
+				Message: "invalid data in params",
+				Error:   "limit not passed",
+			})
+			return
+		}
+
+		var reqData models.UserOperationsRequest
+		params := map[string]string{}
+
+		offset, ok := ctx.GetQuery("offset")
+		if !ok {
+			log.Debug("offset was not passed, the default value of 0 will be used")
+			params["offset"] = "0"
+		} else {
+			params["offset"] = offset
+		}
+
+		params["limit"] = limit
+		params["userID"] = userID
+
+		if err := validateRequestParams(params, &reqData); err != nil {
+			log.Error("validation params failed")
+			ctx.JSON(400, models.HandlerResponse{
+				Status:  http.StatusBadRequest,
+				Message: "validation params failed",
 				Error:   err.Error(),
-			})
-			return
-		}
-
-		reqData.IdempotencyKey = ctx.GetHeader("Idempotency-Key")
-		if reqData.IdempotencyKey == "" {
-			ctx.JSON(400, models.HandlerResponse{
-				Status:  http.StatusBadRequest,
-				Message: "invalid data in headers",
-				Error:   "'Idempotency-Key' was not passed in the headers",
-			})
-			return
-		}
-
-		if checkFormat := utils.IsGUID(reqData.IdempotencyKey); !checkFormat {
-			ctx.JSON(400, models.HandlerResponse{
-				Status:  http.StatusBadRequest,
-				Message: "invalid data in headers",
-				Error:   "'Idempotency-Key' of incorrect format",
 			})
 			return
 		}
@@ -73,30 +74,22 @@ func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 		timeoutCtx, cancel := context.WithTimeout(ctx.Request.Context(), timeoutHandlerResponce)
 		defer cancel()
 
-		result, err := service.Transfer(timeoutCtx, &reqData)
+		result, err := service.UserOperations(timeoutCtx, &reqData)
 		if err != nil {
 			switch {
-			case errors.Is(err, serv.ErrInsufficientFunds):
-				log.Warn("transfer failed, insufficient funds on the balance sheet", "error", err)
-				ctx.JSON(402, models.HandlerResponse{
-					Status:  http.StatusPaymentRequired,
-					Message: "insufficient funds",
-					Error:   err.Error(),
-				})
-				return
-			case errors.Is(err, serv.ErrNegaticeBalance):
-				log.Error("transfer failed, negative balance", "error", err)
-				ctx.JSON(422 , models.HandlerResponse{
-					Status:  http.StatusUnprocessableEntity,
-					Message: "balance cannot be negative",
-					Error:   err.Error(),
-				})
-				return
 			case errors.Is(err, storages.ErrUserNotFound):
 				log.Warn("deposit failed, no user with this id", "error", err)
 				ctx.JSON(404, models.HandlerResponse{
 					Status:  http.StatusNotFound,
 					Message: "no user with this id",
+					Error:   err.Error(),
+				})
+				return
+			case errors.Is(err, storages.ErrOperationsNotFound):
+				log.Warn("deposit failed, user has no operations", "error", err)
+				ctx.JSON(404, models.HandlerResponse{
+					Status:  http.StatusNotFound,
+					Message: "user has no operations",
 					Error:   err.Error(),
 				})
 				return
@@ -119,7 +112,7 @@ func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 			}
 		}
 
-		log.Info("transfer successfully")
+		log.Info("operations successfully")
 		ctx.JSON(200, result)
 	}
 }

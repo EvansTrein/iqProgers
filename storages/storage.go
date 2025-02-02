@@ -9,6 +9,7 @@ import (
 
 var (
 	ErrUserNotFound = errors.New("user not found")
+	ErrOperationsNotFound = errors.New("operations not found")
 	// ErrIdempotencyKeyAlreadyExists = errors.New("Idempotency-Key already exists")
 )
 
@@ -19,4 +20,5 @@ type StoreWallet interface {
 	TransactionGet(ctx context.Context, idempotencyKey string) (*models.Transaction, error)
 	Deposit(ctx context.Context, req *models.DepositRequest) error
 	Transfer(ctx context.Context, req *models.Transaction) error
+	OperationsGet(ctx context.Context, req *models.UserOperationsRequest) (*models.UserOperationsResponse, error)
 }

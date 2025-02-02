@@ -75,7 +75,7 @@ func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, storages.ErrUserNotFound):
-				log.Error("deposit failed, no user with this id", "error", err)
+				log.Warn("deposit failed, no user with this id", "error", err)
 				ctx.JSON(404, models.HandlerResponse{
 					Status:  http.StatusNotFound,
 					Message: "no user with this id",
