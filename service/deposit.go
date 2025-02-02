@@ -8,6 +8,10 @@ import (
 	"github.com/EvansTrein/iqProgers/storages"
 )
 
+// Deposit handles the deposit request for a user's wallet. It checks if the transaction already exists using the idempotency key.
+// If the transaction exists, it retrieves and returns the existing transaction details.
+// If the transaction does not exist, it verifies the user's existence, creates a new transaction, updates the user's balance,
+// and marks the transaction as successful. The function returns a response indicating the success of the deposit operation.
 func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*models.DepositResponse, error) {
 	op := "service Wallet: deposit request received"
 	log := w.log.With(slog.String("operation", op))

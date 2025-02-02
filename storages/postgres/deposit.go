@@ -7,6 +7,10 @@ import (
 	"github.com/EvansTrein/iqProgers/models"
 )
 
+// Deposit processes a deposit request for a user's account. It locks the user's row in the database to prevent concurrent updates,
+// updates the user's balance by adding the specified amount, and marks the transaction as successful. The function uses a database
+// transaction to ensure atomicity. If any step fails (e.g., SQL query execution, transaction commit), 
+// the transaction is rolled back, and the error is logged and returned. 
 func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) error {
 	op := "Database: account deposit"
 	log := s.log.With(slog.String("operation", op))

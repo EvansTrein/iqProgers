@@ -8,6 +8,12 @@ import (
 	"github.com/EvansTrein/iqProgers/models"
 )
 
+// TransactionCreate inserts a new transaction record into the database. Depending on the transaction type (deposit or transfer),
+// it executes the appropriate SQL query to create the transaction. For deposits, it inserts the sender ID, idempotency key,
+// transaction type, and amount. For transfers, it additionally includes the receiver ID. The function retrieves the newly
+// created transaction's ID and date of operation, updates the provided transaction data with these values, and returns nil
+// on success. If the database operation fails, the error is logged and returned. This function ensures that transactions
+// are recorded accurately and consistently in the database.
 func (s *PostgresDB) TransactionCreate(ctx context.Context, data *models.Transaction) error {
 	op := "Database: transaction creation"
 	log := s.log.With(slog.String("operation", op))
@@ -50,6 +56,9 @@ func (s *PostgresDB) TransactionCreate(ctx context.Context, data *models.Transac
 	return nil
 }
 
+// TransactionSetResult updates the success status of a transaction in the database using the provided idempotency key.
+// It executes an SQL query to set the `success` field of the transaction record to the specified value (true or false).
+// If the update operation fails, the error is logged and returned. This function is used to mark the outcome of a transaction
 func (s *PostgresDB) TransactionSetResult(ctx context.Context, idempotencyKey string, success bool) error {
 	op := "Database: transaction result"
 	log := s.log.With(slog.String("operation", op))
@@ -68,6 +77,10 @@ func (s *PostgresDB) TransactionSetResult(ctx context.Context, idempotencyKey st
 	return nil
 }
 
+// TransactionGet retrieves a transaction from the database using the provided idempotency key. It queries the database
+// to fetch details of the transaction, including its ID, success status, type, amount, date, and associated sender/receiver
+// names (if applicable). The function joins the `transactions` table with the `users` table to retrieve sender and receiver
+// names for non-deposit transactions. If the query fails or the transaction is not found, the error is logged and returned.
 func (s *PostgresDB) TransactionGet(ctx context.Context, idempotencyKey string) (*models.Transaction, error) {
 	op := "Database: get transactions"
 	log := s.log.With(slog.String("operation", op))

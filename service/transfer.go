@@ -8,6 +8,11 @@ import (
 	"github.com/EvansTrein/iqProgers/storages"
 )
 
+// Transfer handles the transfer of funds between two users. It first checks if the transaction already exists using the idempotency key.
+// If the transaction exists, it retrieves and returns the existing transaction details. If the transaction does not exist, it verifies
+// the existence of both the sender and receiver users. If either user is not found, it returns an error. If both users exist,
+// it creates a new transaction, processes the transfer, and updates the balances in the database. The function returns a response
+// indicating the success of the transfer operation.
 func (w *Wallet) Transfer(ctx context.Context, req *models.TransferRequest) (*models.TransferResponse, error) {
 	op := "service Wallet: transfer request received"
 	log := w.log.With(slog.String("operation", op))

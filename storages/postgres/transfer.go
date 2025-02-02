@@ -8,6 +8,12 @@ import (
 	services "github.com/EvansTrein/iqProgers/service"
 )
 
+// Transfer handles the transfer of funds between two users within a database transaction. It locks the sender and receiver accounts
+// to prevent concurrent updates, checks the sender's balance to ensure sufficient funds, and updates the balances of both the sender
+// and receiver. It also verifies that the sender's balance does not become negative after the transfer. If any step fails (e.g.,
+// insufficient funds, negative balance, or database errors), the transaction is rolled back, and the error is logged and returned.
+// On success, it updates the transaction result and commits the transaction. This function ensures that the transfer operation is
+// atomic, consistent, and secure.
 func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) error {
 	op := "Database: account transfer"
 	log := s.log.With(slog.String("operation", op))

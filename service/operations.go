@@ -8,6 +8,12 @@ import (
 	"github.com/EvansTrein/iqProgers/storages"
 )
 
+// UserOperations retrieves the list of operations (transactions) for a specific user.
+// It first verifies the existence of the user in the database.
+// If the user does not exist, it returns an error indicating the user was not found.
+// If the user exists, it fetches the user's transactions
+// from the database and returns them in a response. Errors during database access or user verification are logged and returned.
+// The response includes a success message and the list of transactions associated with the user.
 func (w *Wallet) UserOperations(ctx context.Context, req *models.UserOperationsRequest) (*models.UserOperationsResponse, error) {
 	op := "service Wallet: user operations request received"
 	log := w.log.With(slog.String("operation", op))

@@ -8,6 +8,12 @@ import (
 	"github.com/EvansTrein/iqProgers/storages"
 )
 
+// OperationsGet retrieves a list of transactions (operations) for a specific user from the database. It queries the database
+// for transactions where the user is either the sender or the receiver. The results are ordered by the transaction date in
+// descending order and paginated using the provided limit and offset. The function returns a response containing the list
+// of transactions, including details such as transaction type, amount, date, and associated sender/receiver names (if applicable).
+// If no transactions are found, it returns an error indicating that no operations were found.
+// Errors during database querying or row scanning are logged and returned.
 func (s *PostgresDB) OperationsGet(ctx context.Context, req *models.UserOperationsRequest) (*models.UserOperationsResponse, error) {
 	op := "Database: get user operations "
 	log := s.log.With(slog.String("operation", op))
@@ -38,7 +44,7 @@ func (s *PostgresDB) OperationsGet(ctx context.Context, req *models.UserOperatio
 			t.sender_id = $1 OR t.receiver_id = $1
 		ORDER BY
 			t.date_operation DESC
-		LIMIT $2 OFFSET $3`
+		LIMIT $2 OFFSET $3;`
 
 	rows, err := s.db.Query(ctx, queryGet, req.UserID, req.Limit, req.Offset)
 	if err != nil {
