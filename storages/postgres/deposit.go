@@ -12,6 +12,8 @@ func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) er
 	log := s.log.With(slog.String("operation", op))
 	log.Debug("Deposit func call", "data", req)
 
+	rollbackCtx := context.Background()
+
 	queryLock := `SELECT id FROM users WHERE id = $1 FOR UPDATE;`
 
 	updateQuery := `UPDATE users
@@ -27,19 +29,25 @@ func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) er
 
 	if _, err := tx.Exec(ctx, queryLock, req.UserID); err != nil {
 		log.Error("failed to execute SQL query lock in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	if _, err := tx.Exec(ctx, updateQuery, req.Amount, req.UserID); err != nil {
 		log.Error("failed to execute SQL query to update the balance in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	if err := s.TransactionSetResult(ctx, req.IdempotencyKey, true); err != nil {
 		log.Error("failed to set the result of user transaction", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 	

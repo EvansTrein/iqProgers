@@ -17,6 +17,18 @@ type walletTransfer interface {
 	Transfer(ctx context.Context, req *models.TransferRequest) (*models.TransferResponse, error)
 }
 
+// example request
+//
+// Headers - required
+// Idempotency-Key UUID
+// 'f65616ca-8b51-4af2-8342-84157b55cbb7'
+//
+// body - required
+// {
+// 	"sender_id": 4,
+// 	"receiver_id": 3,
+// 	"amount": 100.55
+// }
 func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		op := "Handler Transfer: call"

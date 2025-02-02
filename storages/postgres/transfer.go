@@ -13,6 +13,8 @@ func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) err
 	log := s.log.With(slog.String("operation", op))
 	log.Debug("Transfer func call", "data", data)
 
+	rollbackCtx := context.Background()
+
 	queryLock := `SELECT id FROM users WHERE id = $1 FOR UPDATE;`
 
 	queryCheckBalance := `
@@ -29,7 +31,7 @@ func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) err
 	queryUpdateReceiver := `UPDATE users
 		SET balance = balance + (ROUND($1::numeric, 2) * 100)::bigint
 		WHERE id = $2;`
-	
+
 	queryCheckNegativeBalance := `SELECT balance >= 0
 		FROM users WHERE id = $1;`
 
@@ -53,13 +55,17 @@ func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) err
 
 	if _, err := tx.Exec(ctx, queryLock, data.SenderID); err != nil {
 		log.Error("failed to execute SQL query lock sender in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	if _, err := tx.Exec(ctx, queryLock, data.ReceiverID); err != nil {
 		log.Error("failed to execute SQL query lock receiver in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
@@ -67,19 +73,25 @@ func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) err
 	row := tx.QueryRow(ctx, queryCheckBalance, data.SenderID, data.Amount)
 	if err != row.Scan(&checkBalance) {
 		log.Error("failed to execute SQL query check balance in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	if !checkBalance {
 		log.Warn("insufficient account balance")
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return services.ErrInsufficientFunds
 	}
 
 	if _, err := tx.Exec(ctx, queryUpdateSender, data.Amount, data.SenderID); err != nil {
 		log.Error("failed to execute SQL query update sender in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
@@ -87,32 +99,42 @@ func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) err
 	row = tx.QueryRow(ctx, queryCheckNegativeBalance, data.SenderID)
 	if err != row.Scan(&isBalanceNonNegative) {
 		log.Error("failed to execute SQL query check negative balance in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	if !isBalanceNonNegative {
 		log.Warn("negative balance")
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return services.ErrNegaticeBalance
 	}
 
 	if _, err := tx.Exec(ctx, queryUpdateReceiver, data.Amount, data.ReceiverID); err != nil {
 		log.Error("failed to execute SQL query update receiver in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	row = tx.QueryRow(ctx, queryGetName, data.SenderID, data.ReceiverID)
 	if err := row.Scan(&data.SenderName, &data.ReceiverName); err != nil {
 		log.Error("failed to execute SQL query get name in the database", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
 	if err := s.TransactionSetResult(ctx, data.IdempotencyKey, true); err != nil {
 		log.Error("failed to set the result of user transaction", "error", err)
-		tx.Rollback(ctx)
+		if err := tx.Rollback(rollbackCtx); err != nil {
+			log.Error("!!!ATTENTION!!! failed to rollback transaction", "error", err)
+		}
 		return err
 	}
 
@@ -121,5 +143,6 @@ func (s *PostgresDB) Transfer(ctx context.Context, data *models.Transaction) err
 		return err
 	}
 
+	log.Info("transaction successfully completed")
 	return nil
 }
