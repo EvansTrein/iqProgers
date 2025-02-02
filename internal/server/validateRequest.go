@@ -2,10 +2,21 @@ package server
 
 import (
 	"errors"
+	"regexp"
 	"strconv"
 
 	"github.com/EvansTrein/iqProgers/models"
 )
+
+func isGUID(s string) (bool, error) {
+	guidRegex := `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`
+	ok, err := regexp.MatchString(guidRegex, s)
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
+}
 
 func validateRequestParams(params map[string]string, reqStruct interface{}) error {
 	switch req := reqStruct.(type) {

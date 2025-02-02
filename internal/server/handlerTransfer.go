@@ -9,7 +9,6 @@ import (
 	"github.com/EvansTrein/iqProgers/models"
 	serv "github.com/EvansTrein/iqProgers/service"
 	"github.com/EvansTrein/iqProgers/storages"
-	"github.com/EvansTrein/iqProgers/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,11 +23,12 @@ type walletTransfer interface {
 // 'f65616ca-8b51-4af2-8342-84157b55cbb7'
 //
 // body - required
-// {
-// 	"sender_id": 4,
-// 	"receiver_id": 3,
-// 	"amount": 100.55
-// }
+//
+//	{
+//		"sender_id": 4,
+//		"receiver_id": 3,
+//		"amount": 100.55
+//	}
 func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		op := "Handler Transfer: call"
@@ -59,11 +59,21 @@ func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 			return
 		}
 
-		if checkFormat := utils.IsGUID(reqData.IdempotencyKey); !checkFormat {
+		isVaild, err := isGUID(reqData.IdempotencyKey)
+		if err != nil {
+			ctx.JSON(500, models.HandlerResponse{
+				Status:  http.StatusInternalServerError,
+				Message: "failed to verify the header format 'Idempotency-Key'",
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		if !isVaild {
 			ctx.JSON(400, models.HandlerResponse{
 				Status:  http.StatusBadRequest,
-				Message: "invalid data in headers",
-				Error:   "'Idempotency-Key' of incorrect format",
+				Message: "invalid data in headers 'Idempotency-Key'",
+				Error:   "header 'Idempotency-Key' does not match the UUID format",
 			})
 			return
 		}
@@ -86,7 +96,7 @@ func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 				return
 			case errors.Is(err, serv.ErrNegaticeBalance):
 				log.Error("transfer failed, negative balance", "error", err)
-				ctx.JSON(422 , models.HandlerResponse{
+				ctx.JSON(422, models.HandlerResponse{
 					Status:  http.StatusUnprocessableEntity,
 					Message: "balance cannot be negative",
 					Error:   err.Error(),

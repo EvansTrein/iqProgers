@@ -11,6 +11,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// example request
+
+// path parameters - required
+// id 1
+//
+// query parameters 
+// limit - required
+// 10
+//
+// offset 
+// default = 0
 type walletOperations interface {
 	UserOperations(ctx context.Context, req *models.UserOperationsRequest) (*models.UserOperationsResponse, error)
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/EvansTrein/iqProgers/models"
 	"github.com/EvansTrein/iqProgers/storages"
-	"github.com/EvansTrein/iqProgers/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +23,7 @@ type walletDeposit interface {
 //
 // body - required
 // {
-// "id": 2, 
+// "id": 2,
 // "amount": 205.44
 // }
 func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
@@ -57,11 +56,21 @@ func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
 			return
 		}
 
-		if checkFormat := utils.IsGUID(reqData.IdempotencyKey); !checkFormat {
+		isVaild, err := isGUID(reqData.IdempotencyKey)
+		if err != nil {
+			ctx.JSON(500, models.HandlerResponse{
+				Status:  http.StatusInternalServerError,
+				Message: "failed to verify the header format 'Idempotency-Key'",
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		if !isVaild {
 			ctx.JSON(400, models.HandlerResponse{
 				Status:  http.StatusBadRequest,
-				Message: "invalid data in headers",
-				Error:   "'Idempotency-Key' of incorrect format",
+				Message: "invalid data in headers 'Idempotency-Key'",
+				Error:   "header 'Idempotency-Key' does not match the UUID format",
 			})
 			return
 		}
