@@ -33,3 +33,21 @@ func (s *PostgresDB) TransactionCreate(ctx context.Context, data *models.Transac
 	log.Info("transaction created successfully", "id", id)
 	return nil
 }
+
+func (s *PostgresDB) TransactionSetResult(ctx context.Context, idempotencyKey string, success bool) error {
+	op := "Database: transaction result"
+	log := s.log.With(slog.String("operation", op))
+	log.Debug("TransactionSetResult func call", "success", success)
+
+	resultQuery := `UPDATE transactions
+		SET success = $1
+		WHERE idempotency_key = $2;`
+
+	if _, err := s.db.Exec(ctx, resultQuery, success, idempotencyKey); err != nil {
+		log.Error("failed to update the user transaction result in the database", "error", err)
+		return err
+	}
+
+	log.Info("user transaction result in the database was successfully updated")
+	return nil
+}

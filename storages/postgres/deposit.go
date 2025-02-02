@@ -12,11 +12,6 @@ func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) er
 	log := s.log.With(slog.String("operation", op))
 	log.Debug("Deposit func call", "data", req)
 
-	// lockQuery := `SELECT balance
-	// 	FROM users
-	// 	WHERE id = $1
-	// 	FOR UPDATE;`
-
 	updateQuery := `UPDATE users
 		SET balance = balance + (ROUND($1::numeric, 2) * 100)::bigint
 		WHERE id = $2;`
@@ -28,19 +23,17 @@ func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) er
 		return err
 	}
 
-	// if _, err := tx.Exec(ctx, lockQuery, data.SenderID); err != nil {
-	// 	log.Error("failed to execute SQL query to lock a record in the database", "error", err)
-	// 	tx.Rollback(ctx)
-	// 	return err
-	// }
-
 	if _, err := tx.Exec(ctx, updateQuery, req.Amount, req.UserID); err != nil {
 		log.Error("failed to execute SQL query to update the balance in the database", "error", err)
 		tx.Rollback(ctx)
 		return err
 	}
 
-	// TODO: закрыть транзакцию пользователя
+	if err := s.TransactionSetResult(ctx, req.IdempotencyKey, true); err != nil {
+		log.Error("failed to set the result of user transaction", "error", err)
+		tx.Rollback(ctx)
+		return err
+	}
 	
 	if err := tx.Commit(ctx); err != nil {
 		log.Error("!!!ATTENTION!!! failed to commit transaction", "error", err)

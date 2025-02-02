@@ -25,7 +25,6 @@ type Transaction struct {
 	ReceiverID     uint      `json:"-"`
 	IdempotencyKey string    `json:"-"`
 	Success        bool      `json:"success"`
-	Completed      bool      `json:"completed"`
 	SenderName     string    `json:"sender,omitempty"`
 	ReceiverName   string    `json:"receiver,omitempty"`
 	TypeOperation  string    `json:"type_operation"`

@@ -10,7 +10,6 @@ CREATE TABLE transactions (
     receiver_id INT REFERENCES users(id),
     idempotency_key UUID UNIQUE NOT NULL,
 	success BOOLEAN NOT NULL DEFAULT false,
-	completed BOOLEAN NOT NULL DEFAULT false,
 	type_operation VARCHAR(80) NOT NULL,
 	amount BIGINT NOT NULL,
     date_operation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

@@ -57,6 +57,8 @@ func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*mode
 		return nil, err
 	}
 
+	dataTran.Success = true
+
 	resp := models.DepositResponse{
 		Message:   "deposit successfully",
 		Operation: dataTran,
