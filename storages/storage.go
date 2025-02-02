@@ -16,5 +16,7 @@ type StoreWallet interface {
 	ExsistUser(ctx context.Context, id uint) (bool, error)
 	ExsistIdempotencyKey(ctx context.Context, uuid string) (bool, error)
 	TransactionCreate(ctx context.Context, data *models.Transaction) error
+	TransactionGet(ctx context.Context, idempotencyKey string) (*models.Transaction, error)
 	Deposit(ctx context.Context, req *models.DepositRequest) error
+	Transfer(ctx context.Context, req *models.Transaction) error
 }

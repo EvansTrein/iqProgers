@@ -1,9 +1,15 @@
 package services
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/EvansTrein/iqProgers/storages"
+)
+
+var (
+	ErrInsufficientFunds = errors.New("insufficient account balance")
+	ErrNegaticeBalance = errors.New("negative balance")
 )
 
 type Wallet struct {

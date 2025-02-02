@@ -15,8 +15,20 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
-	Message   string      `json:"message"`
-	Operation Transaction `json:"operation"`
+	Message   string       `json:"message"`
+	Operation *Transaction `json:"operation"`
+}
+
+type TransferRequest struct {
+	IdempotencyKey string  `json:"-"`
+	SenderID       uint    `json:"sender_id" binding:"required"`
+	ReceiverID     uint    `json:"receiver_id" binding:"required"`
+	Amount         float64 `json:"amount" binding:"required,gt=0"`
+}
+
+type TransferResponse struct {
+	Message   string       `json:"message"`
+	Operation *Transaction `json:"operation"`
 }
 
 type Transaction struct {
@@ -25,8 +37,8 @@ type Transaction struct {
 	ReceiverID     uint      `json:"-"`
 	IdempotencyKey string    `json:"-"`
 	Success        bool      `json:"success"`
-	SenderName     string    `json:"sender,omitempty"`
-	ReceiverName   string    `json:"receiver,omitempty"`
+	SenderName     *string   `json:"sender,omitempty"`
+	ReceiverName   *string   `json:"receiver,omitempty"`
 	TypeOperation  string    `json:"type_operation"`
 	Amount         float64   `json:"amount"`
 	Date           time.Time `json:"date"`

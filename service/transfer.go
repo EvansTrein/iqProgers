@@ -8,10 +8,10 @@ import (
 	"github.com/EvansTrein/iqProgers/storages"
 )
 
-func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*models.DepositResponse, error) {
-	op := "service Wallet: deposit request received"
+func (w *Wallet) Transfer(ctx context.Context, req *models.TransferRequest) (*models.TransferResponse, error) {
+	op := "service Wallet: transfer request received"
 	log := w.log.With(slog.String("operation", op))
-	log.Debug("Deposit func call", "requets data", req)
+	log.Debug("Transfer func call", "requets data", req)
 
 	exsistTransaction, err := w.db.ExsistIdempotencyKey(ctx, req.IdempotencyKey)
 	if err != nil {
@@ -21,15 +21,15 @@ func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*mode
 
 	if exsistTransaction {
 		log.Warn("transaction already exists")
-		
+
 		dataTran, err := w.db.TransactionGet(ctx, req.IdempotencyKey)
 		if err != nil {
 			log.Error("failed to retrieve existing transaction", "error", err)
 			return nil, err
 		}
 
-		resp := models.DepositResponse{
-			Message:   "deposit successfully",
+		resp := models.TransferResponse{
+			Message:   "transfer successfully",
 			Operation: dataTran,
 		}
 
@@ -37,14 +37,20 @@ func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*mode
 		return &resp, nil
 	}
 
-	exsistUser, err := w.db.ExsistUser(ctx, req.UserID)
+	exsistUserSender, err := w.db.ExsistUser(ctx, req.SenderID)
 	if err != nil {
-		log.Error("failed to check if the user exists in the database", "error", err)
+		log.Error("failed to check if the UserSender exists in the database", "error", err)
 		return nil, err
 	}
 
-	if !exsistUser {
-		log.Warn("user not found", "id", req.UserID)
+	exsistUserReceiver, err := w.db.ExsistUser(ctx, req.SenderID)
+	if err != nil {
+		log.Error("failed to check if the UserReceiver exists in the database", "error", err)
+		return nil, err
+	}
+
+	if !exsistUserSender || !exsistUserReceiver {
+		log.Warn("user not found", "SenderID", req.SenderID, "ReceiverID", req.ReceiverID)
 		return nil, storages.ErrUserNotFound
 	}
 
@@ -53,8 +59,9 @@ func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*mode
 	// data for transaction creation
 	dataTran := models.Transaction{
 		IdempotencyKey: req.IdempotencyKey,
-		SenderID:       req.UserID,
-		TypeOperation:  "deposit",
+		SenderID:       req.SenderID,
+		ReceiverID:     req.ReceiverID,
+		TypeOperation:  "transfer",
 		Amount:         req.Amount,
 	}
 
@@ -65,18 +72,18 @@ func (w *Wallet) Deposit(ctx context.Context, req *models.DepositRequest) (*mode
 
 	log.Info("transaction for the user operation was successfully created", "transaction ID", dataTran.ID)
 
-	if err := w.db.Deposit(ctx, req); err != nil {
+	if err := w.db.Transfer(ctx, &dataTran); err != nil {
 		log.Error("failed to update the balance value in the database", "error", err)
 		return nil, err
 	}
 
 	dataTran.Success = true
 
-	resp := models.DepositResponse{
-		Message:   "deposit successfully",
+	resp := models.TransferResponse{
+		Message:   "transfer successfully",
 		Operation: &dataTran,
 	}
 
-	log.Info("deposit successfully")
+	log.Info("transfer successfully")
 	return &resp, nil
 }

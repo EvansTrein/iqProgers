@@ -7,29 +7,19 @@ import (
 	"net/http"
 
 	"github.com/EvansTrein/iqProgers/models"
+	serv "github.com/EvansTrein/iqProgers/service"
 	"github.com/EvansTrein/iqProgers/storages"
 	"github.com/EvansTrein/iqProgers/utils"
 	"github.com/gin-gonic/gin"
 )
 
-type walletDeposit interface {
-	Deposit(ctx context.Context, req *models.DepositRequest) (*models.DepositResponse, error)
+type walletTransfer interface {
+	Transfer(ctx context.Context, req *models.TransferRequest) (*models.TransferResponse, error)
 }
 
-// example request
-//
-// Headers - required
-// Idempotency-Key UUID
-// 'f65616ca-8b51-4af2-8342-84157b55cbb7'
-//
-// body - required
-// {
-// "id": 2, 
-// "amount": 205.44
-// }
-func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
+func Transfer(log *slog.Logger, service walletTransfer) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		op := "Handler Deposit: call"
+		op := "Handler Transfer: call"
 		log = log.With(
 			slog.String("operation", op),
 			slog.String("apiPath", ctx.FullPath()),
@@ -37,7 +27,7 @@ func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
 		)
 		log.Debug("request received")
 
-		var reqData models.DepositRequest
+		var reqData models.TransferRequest
 		if err := ctx.ShouldBindJSON(&reqData); err != nil {
 			ctx.JSON(400, models.HandlerResponse{
 				Status:  http.StatusBadRequest,
@@ -71,9 +61,25 @@ func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
 		timeoutCtx, cancel := context.WithTimeout(ctx.Request.Context(), timeoutHandlerResponce)
 		defer cancel()
 
-		result, err := service.Deposit(timeoutCtx, &reqData)
+		result, err := service.Transfer(timeoutCtx, &reqData)
 		if err != nil {
 			switch {
+			case errors.Is(err, serv.ErrInsufficientFunds):
+				log.Error("transfer failed, insufficient funds on the balance sheet", "error", err)
+				ctx.JSON(402, models.HandlerResponse{
+					Status:  http.StatusPaymentRequired,
+					Message: "insufficient funds",
+					Error:   err.Error(),
+				})
+				return
+			case errors.Is(err, serv.ErrNegaticeBalance):
+				log.Error("transfer failed, negative balance", "error", err)
+				ctx.JSON(422 , models.HandlerResponse{
+					Status:  http.StatusUnprocessableEntity,
+					Message: "balance cannot be negative",
+					Error:   err.Error(),
+				})
+				return
 			case errors.Is(err, storages.ErrUserNotFound):
 				log.Error("deposit failed, no user with this id", "error", err)
 				ctx.JSON(404, models.HandlerResponse{
@@ -101,7 +107,7 @@ func Deposit(log *slog.Logger, service walletDeposit) gin.HandlerFunc {
 			}
 		}
 
-		log.Info("deposit successfully")
+		log.Info("transfer successfully")
 		ctx.JSON(200, result)
 	}
 }

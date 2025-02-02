@@ -12,6 +12,8 @@ func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) er
 	log := s.log.With(slog.String("operation", op))
 	log.Debug("Deposit func call", "data", req)
 
+	queryLock := `SELECT id FROM users WHERE id = $1 FOR UPDATE;`
+
 	updateQuery := `UPDATE users
 		SET balance = balance + (ROUND($1::numeric, 2) * 100)::bigint
 		WHERE id = $2;`
@@ -20,6 +22,12 @@ func (s *PostgresDB) Deposit(ctx context.Context, req *models.DepositRequest) er
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		log.Error("failed to begin transaction", "error", err)
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, queryLock, req.UserID); err != nil {
+		log.Error("failed to execute SQL query lock in the database", "error", err)
+		tx.Rollback(ctx)
 		return err
 	}
 
