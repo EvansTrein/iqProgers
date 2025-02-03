@@ -5,8 +5,8 @@ import (
 
 	"github.com/EvansTrein/iqProgers/internal/config"
 	"github.com/EvansTrein/iqProgers/internal/server"
-	services "github.com/EvansTrein/iqProgers/service"
-	"github.com/EvansTrein/iqProgers/storages/postgres"
+	services "github.com/EvansTrein/iqProgers/internal/service"
+	"github.com/EvansTrein/iqProgers/internal/storages/postgres"
 )
 
 type App struct {

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/EvansTrein/iqProgers/models"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 )
 
 // OperationsGet retrieves a list of transactions (operations) for a specific user from the database. It queries the database

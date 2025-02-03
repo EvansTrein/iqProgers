@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/EvansTrein/iqProgers/models"
-	serv "github.com/EvansTrein/iqProgers/service"
-	"github.com/EvansTrein/iqProgers/storages"
+	serv "github.com/EvansTrein/iqProgers/internal/service"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 	"github.com/gin-gonic/gin"
 )
 

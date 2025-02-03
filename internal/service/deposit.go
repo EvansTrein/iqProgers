@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/EvansTrein/iqProgers/models"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 )
 
 // Deposit handles the deposit request for a user's wallet. It checks if the transaction already exists using the idempotency key.

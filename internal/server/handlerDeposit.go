@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/EvansTrein/iqProgers/models"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 	"github.com/gin-gonic/gin"
 )
 

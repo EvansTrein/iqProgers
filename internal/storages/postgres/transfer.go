@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/EvansTrein/iqProgers/models"
-	services "github.com/EvansTrein/iqProgers/service"
+	services "github.com/EvansTrein/iqProgers/internal/service"
 )
 
 // Transfer handles the transfer of funds between two users within a database transaction. It locks the sender and receiver accounts

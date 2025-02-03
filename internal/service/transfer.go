@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/EvansTrein/iqProgers/models"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 )
 
 // Transfer handles the transfer of funds between two users. It first checks if the transaction already exists using the idempotency key.

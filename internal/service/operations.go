@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/EvansTrein/iqProgers/models"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 )
 
 // UserOperations retrieves the list of operations (transactions) for a specific user.

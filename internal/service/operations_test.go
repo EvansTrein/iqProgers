@@ -7,8 +7,8 @@ import (
 
 	"github.com/EvansTrein/iqProgers/models"
 	"github.com/EvansTrein/iqProgers/pkg/logs"
-	"github.com/EvansTrein/iqProgers/service/mock"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/service/mock"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

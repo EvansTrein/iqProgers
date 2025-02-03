@@ -7,13 +7,13 @@ import (
 
 	"github.com/EvansTrein/iqProgers/models"
 	"github.com/EvansTrein/iqProgers/pkg/logs"
-	"github.com/EvansTrein/iqProgers/service/mock"
-	"github.com/EvansTrein/iqProgers/storages"
+	"github.com/EvansTrein/iqProgers/internal/service/mock"
+	"github.com/EvansTrein/iqProgers/internal/storages"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWallet_Deposit(t *testing.T) {
+func TestWallet_Transfer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -24,15 +24,16 @@ func TestWallet_Deposit(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		req          *models.DepositRequest
+		req          *models.TransferRequest
 		mockSetup    func()
-		expectedResp *models.DepositResponse
+		expectedResp *models.TransferResponse
 		expectedErr  error
 	}{
 		{
-			name: "successful deposit",
-			req: &models.DepositRequest{
-				UserID:         1,
+			name: "successful transfer",
+			req: &models.TransferRequest{
+				SenderID:       1,
+				ReceiverID:     2,
 				Amount:         100,
 				IdempotencyKey: mock.IdempotencyKeyTestDef,
 			},
@@ -46,16 +47,17 @@ func TestWallet_Deposit(t *testing.T) {
 				mockStore.TransactionCreateFunc = func(ctx context.Context, data *models.Transaction) error {
 					return nil
 				}
-				mockStore.DepositFunc = func(ctx context.Context, req *models.DepositRequest) error {
+				mockStore.TransferFunc = func(ctx context.Context, req *models.Transaction) error {
 					return nil
 				}
 			},
-			expectedResp: &models.DepositResponse{
-				Message: "deposit successfully",
+			expectedResp: &models.TransferResponse{
+				Message: "transfer successfully",
 				Operation: &models.Transaction{
 					IdempotencyKey: mock.IdempotencyKeyTestDef,
 					SenderID:       1,
-					TypeOperation:  "deposit",
+					ReceiverID:     2,
+					TypeOperation:  "transfer",
 					Amount:         100,
 					Success:        true,
 				},
@@ -64,8 +66,9 @@ func TestWallet_Deposit(t *testing.T) {
 		},
 		{
 			name: "transaction already exists",
-			req: &models.DepositRequest{
-				UserID:         1,
+			req: &models.TransferRequest{
+				SenderID:       1,
+				ReceiverID:     2,
 				Amount:         100,
 				IdempotencyKey: mock.IdempotencyKeyTestDef,
 			},
@@ -77,18 +80,20 @@ func TestWallet_Deposit(t *testing.T) {
 					return &models.Transaction{
 						IdempotencyKey: mock.IdempotencyKeyTestDef,
 						SenderID:       1,
-						TypeOperation:  "deposit",
+						ReceiverID:     2,
+						TypeOperation:  "transfer",
 						Amount:         100,
 						Success:        true,
 					}, nil
 				}
 			},
-			expectedResp: &models.DepositResponse{
-				Message: "deposit successfully",
+			expectedResp: &models.TransferResponse{
+				Message: "transfer successfully",
 				Operation: &models.Transaction{
 					IdempotencyKey: mock.IdempotencyKeyTestDef,
 					SenderID:       1,
-					TypeOperation:  "deposit",
+					ReceiverID:     2,
+					TypeOperation:  "transfer",
 					Amount:         100,
 					Success:        true,
 				},
@@ -97,8 +102,9 @@ func TestWallet_Deposit(t *testing.T) {
 		},
 		{
 			name: "user not found",
-			req: &models.DepositRequest{
-				UserID:         1,
+			req: &models.TransferRequest{
+				SenderID:       1,
+				ReceiverID:     2,
 				Amount:         100,
 				IdempotencyKey: mock.IdempotencyKeyTestDef,
 			},
@@ -115,8 +121,9 @@ func TestWallet_Deposit(t *testing.T) {
 		},
 		{
 			name: "failed to create transaction",
-			req: &models.DepositRequest{
-				UserID:         1,
+			req: &models.TransferRequest{
+				SenderID:       1,
+				ReceiverID:     2,
 				Amount:         100,
 				IdempotencyKey: mock.IdempotencyKeyTestDef,
 			},
@@ -134,13 +141,38 @@ func TestWallet_Deposit(t *testing.T) {
 			expectedResp: nil,
 			expectedErr:  errors.New("failed to create transaction"),
 		},
+		{
+			name: "failed to transfer",
+			req: &models.TransferRequest{
+				SenderID:       1,
+				ReceiverID:     2,
+				Amount:         100,
+				IdempotencyKey: mock.IdempotencyKeyTestDef,
+			},
+			mockSetup: func() {
+				mockStore.ExsistIdempotencyKeyFunc = func(ctx context.Context, uuid string) (bool, error) {
+					return false, nil
+				}
+				mockStore.ExsistUserFunc = func(ctx context.Context, id uint) (bool, error) {
+					return true, nil
+				}
+				mockStore.TransactionCreateFunc = func(ctx context.Context, data *models.Transaction) error {
+					return nil
+				}
+				mockStore.TransferFunc = func(ctx context.Context, req *models.Transaction) error {
+					return errors.New("failed to transfer")
+				}
+			},
+			expectedResp: nil,
+			expectedErr:  errors.New("failed to transfer"),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
 
-			resp, err := wallet.Deposit(context.Background(), tt.req)
+			resp, err := wallet.Transfer(context.Background(), tt.req)
 
 			assert.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedResp, resp)

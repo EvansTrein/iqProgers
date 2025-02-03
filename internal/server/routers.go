@@ -1,6 +1,6 @@
 package server
 
-import services "github.com/EvansTrein/iqProgers/service"
+import services "github.com/EvansTrein/iqProgers/internal/service"
 
 func (s *HttpServer) InitRouters(wallet *services.Wallet) {
 	
