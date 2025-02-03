@@ -1,4 +1,4 @@
-Language: [EN]() [RU]()
+Language: [EN](https://github.com/EvansTrein/iqProgers/blob/main/README.md) [RU](https://github.com/EvansTrein/iqProgers/blob/main/readmeRU.md)
 
 # Это тестовое задание 
 - Сделать REST API для финансовых операций с тремя ручками
