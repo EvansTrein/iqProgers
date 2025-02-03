@@ -16,6 +16,16 @@ services:
       networks:
         - server_net
 
+  api:
+    container_name: api
+    build: .
+    depends_on:
+      - storage
+    networks:
+      - server_net
+    ports:
+      - ${HTTP_API_PORT}:${HTTP_API_PORT}
+
 volumes: 
   storage_vol: {}
 
