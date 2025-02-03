@@ -2,9 +2,9 @@ Language: [EN](https://github.com/EvansTrein/iqProgers/blob/main/README.md) [RU]
 
 # It's a test assignment 
 - Make a REST API for financial transactions with three handles
-  1. Top up the user's balance
-  2. Transferring money from one user to another
-  3. View 10 recent transactions of a user
+  - Top up the user's balance.
+  - Transferring money from one user to another.
+  - View 10 recent transactions of a user.
 - The user has a balance as well as a list of transactions. 
 - Don't forget to use SQL transactions!!!
 - Authorization is not necessary!
